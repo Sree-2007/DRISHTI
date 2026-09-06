@@ -1,0 +1,192 @@
+// Prisma schema for DRISHTI (Dynamic Roadway Intelligence System for Hazard Tracking & Intervention)
+// Using UUID for all IDs as required
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enum for user roles
+enum Role {
+  DRIVER
+  POLICE
+  CITIZEN
+  ADMIN
+}
+
+// Enum for zone status
+enum ZoneStatus {
+  NORMAL
+  WATERLOGGED
+  BLOCKED
+  RALLY
+  ACCIDENT
+}
+
+// Enum for zone assignment status
+enum AssignmentStatus {
+  ACTIVE
+  COMPLETED
+}
+
+// Enum for report types
+enum ReportType {
+  WATERLOGGING
+  BLOCKAGE
+  RALLY
+  ACCIDENT
+}
+
+// Enum for report status
+enum ReportStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+// Enum for traffic signal phases
+enum SignalPhase {
+  NORTH
+  SOUTH
+  EAST
+  WEST
+}
+
+// Enum for alert types
+enum AlertType {
+  HAZARD
+  PREDICTION
+  AMBULANCE
+  SYSTEM
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String
+  name          String
+  phone         String
+  role          Role
+  trustScore    Int      @default(50)
+  createdAt     DateTime @default(now())
+
+  // Relations
+  reports       Report[]
+  assignments   ZoneAssignment[]
+}
+
+// Zone model with JSON boundary for geographic data
+model Zone {
+  id            String   @id @default(uuid())
+  name          String
+  boundary      Json     // Stores GeoJSON or similar geographic boundary data
+  currentStatus ZoneStatus @default(NORMAL)
+  assignedOfficerId String?
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  assignments   ZoneAssignment[]
+  signals       TrafficSignal[]
+
+  // Optional relation to officer (police user)
+  assignedOfficer User? @relation(fields: [assignedOfficerId], references: [id])
+}
+
+model ZoneAssignment {
+  id        String   @id @default(uuid())
+  officerId String
+  zoneId    String
+  assignedAt DateTime @default(now())
+  status    AssignmentStatus @default(ACTIVE)
+
+  // Relations
+  officer   User @relation(fields: [officerId], references: [id])
+  zone      Zone @relation(fields: [zoneId], references: [id])
+
+  @@id([officerId, zoneId]) // Composite unique constraint
+}
+
+model Report {
+  id              String   @id @default(uuid())
+  reporterId      String
+  zoneId          String
+  type            ReportType
+  description     String
+  imageUrl        String?
+  lat             Float
+  lng             Float
+  status          ReportStatus @default(PENDING)
+  aiConfidence    Float?       // 0-100 percentage
+  verifiedByOfficerId String?
+  createdAt       DateTime @default(now())
+
+  // Relations
+  reporter        User @relation(fields: [reporterId], references: [id])
+  zone            Zone @relation(fields: [zoneId], references: [id])
+  verifiedBy      User? @relation(fields: [verifiedByOfficerId], references: [id])
+
+  @@index([createdAt])
+  @@index([zoneId])
+}
+
+model TrafficSignal {
+  id              String   @id @default(uuid())
+  zoneId          String
+  intersectionName String
+  lat             Float
+  lng             Float
+  currentPhase    SignalPhase
+  greenTimeSeconds Int      @default(30)
+  vehicleCount    Int      @default(0)
+  bikeCount       Int      @default(0)
+  isAmbulanceMode Boolean  @default(false)
+  lastUpdated     DateTime @updatedAt
+
+  // Relations
+  zone            Zone @relation(fields: [zoneId], references: [id])
+
+  @@index([zoneId])
+}
+
+model HazardPrediction {
+  id              String   @id @default(uuid())
+  zoneId          String
+  predictedType   String   // e.g., "WATERLOGGING", "BLOCKAGE", etc.
+  confidenceScore Float    // 0-100 percentage
+  weatherData     Json     // OpenWeatherMap API response data
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+
+  // Relations
+  zone            Zone @relation(fields: [zoneId], references: [id])
+}
+
+model Alert {
+  id              String   @id @default(uuid())
+  type            AlertType
+  message         String
+  targetZoneId    String?
+  lat             Float?
+  lng             Float?
+  radius          Int?       // in meters for circular alerts
+  sentToUsers     Json       // Array of user IDs who received this alert
+  createdAt       DateTime @default(now())
+
+  // Relations
+  targetZone      Zone? @relation(fields: [targetZoneId], references: [id])
+}
+
+model AmbulanceLog {
+  id              String   @id @default(uuid())
+  ambulanceId     String   // Could be vehicle ID or license plate
+  route           Json     // Array of lat/lng points
+  signalOverrides Json     // Signal ID -> phase overrides
+  startTime       DateTime
+  endTime         DateTime?
+}
+
+// Additional indexes for performance
