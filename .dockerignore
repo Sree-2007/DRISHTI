@@ -1,0 +1,15 @@
+node_modules
+npm-debug.log
+Dockerfile
+.dockerignore
+.git
+.gitignore
+.env
+.env.example
+README.md
+camera-simulator.js
+docker-compose.yml
+frontend/
+backend/src/
+backend/prisma/
+backend/verify-setup.js
