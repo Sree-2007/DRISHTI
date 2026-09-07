@@ -1,24 +1,23 @@
 # DRISHTI Backend Dockerfile
+
 FROM node:18-alpine
 
-# Set working directory
 WORKDIR /usr/src/app
 
-# Copy package files
-COPY backend/package.json backend/package-lock.json ./
+# Copy backend package files
+COPY package.json package-lock.json ./
 
-# Install dependencies
+# Install production dependencies
 RUN npm ci --omit=dev
 
-# Copy source code
+# Copy backend source code
 COPY . .
 
-# Expose port
+# Generate Prisma client
+RUN npx prisma generate
+
+# Render provides PORT automatically
 EXPOSE 5000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').request({host:'localhost', port:5000, path:'/api/health'}, res => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', e => process.exit(1))"
-
-# Start application
-CMD ["npm", "run", "start"]
+# Start backend
+CMD ["npm", "start"]
