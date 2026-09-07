@@ -1,3 +1,17 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AssignmentStatus {
+  ACTIVE
+  INACTIVE
+}
+
 model ZoneAssignment {
   id         String           @id @default(uuid())
   officerId  String
