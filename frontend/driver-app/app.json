@@ -36,7 +36,9 @@
     "extra": {
       "eas": {
         "projectId": "your-project-id"
-      }
+      },
+      "apiUrl": "https://drishti-backend.onrender.com",
+      "wsUrl": "wss://drishti-backend.onrender.com"
     }
   }
 }
