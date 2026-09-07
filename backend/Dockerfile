@@ -2,20 +2,23 @@ FROM node:18-alpine
 
 WORKDIR /usr/src/app
 
-# Copy backend dependency files
+# Install OpenSSL for Prisma
+RUN apk add --no-cache openssl
+
+# Copy backend package files
 COPY backend/package.json backend/package-lock.json ./
 
-# Install dependencies
+# Install production dependencies
 RUN npm ci --omit=dev
 
-# Copy backend source
+# Copy the complete backend
 COPY backend/ ./
 
-# Generate Prisma client
-RUN npx prisma generate
+# Generate Prisma Client using the exact schema location
+RUN npx prisma generate --schema=/usr/src/app/prisma/schema.prisma
 
-# Render supplies PORT at runtime
+# Render provides PORT automatically
 EXPOSE 10000
 
-# Start backend
+# Start the server
 CMD ["npm", "start"]
