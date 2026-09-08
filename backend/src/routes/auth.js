@@ -3,7 +3,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { prisma } = require('../prisma');
+const prisma = require('../prisma');  // ✓ Fixed import
 const { generateAccessToken, generateRefreshToken, verifyToken } = require('../utils/jwt');
 const bcrypt = require('bcryptjs');
 const { registerSchema, loginSchema } = require('../utils/validation');
