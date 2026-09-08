@@ -8,8 +8,9 @@ RUN apk add --no-cache openssl
 # Copy backend dependency files
 COPY backend/package.json backend/package-lock.json ./
 
-# Install production dependencies (using npm install instead of npm ci for better compatibility)
-RUN npm install --omit=dev || npm install
+# Install production dependencies with --legacy-peer-deps to skip peer dependency conflicts
+# and --no-audit to skip security audit that may timeout
+RUN npm install --omit=dev --legacy-peer-deps --no-audit || npm install --legacy-peer-deps --no-audit
 
 # Copy backend application
 COPY backend/ ./
