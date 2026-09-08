@@ -1,7 +1,8 @@
 // Socket.IO handler for DRISHTI
 // Manages real-time communication between clients and server
 
-const { prisma } = require('../prisma');
+const prisma = require('../prisma');  // ✓ Fixed import
+const { verifyToken } = require('../utils/jwt');
 
 // Store connected users by socket ID
 const connectedUsers = new Map();
@@ -14,14 +15,13 @@ function initialize(io) {
     // Handle user authentication
     socket.on('authenticate', async (token) => {
       try {
-        // In a real implementation, you would verify the JWT token here
-        // For now, we'll assume the token contains user info
-        // const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        // const userId = decoded.userId;
+        // Verify the JWT token
+        const decoded = verifyToken(token, process.env.JWT_SECRET);
+        if (!decoded || !decoded.userId) {
+          return socket.emit('authenticated', { success: false, message: 'Invalid token' });
+        }
 
-        // For demo purposes, we'll use a mock user ID
-        // In production, replace this with actual token verification
-        const userId = 'mock-user-id'; // Replace with actual user ID from token
+        const userId = decoded.userId;
 
         // Store user info with socket
         connectedUsers.set(socket.id, { userId, socket });
